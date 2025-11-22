@@ -1,0 +1,20 @@
+# Build artifacts
+target/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+
+# Rust tooling
+Cargo.lock
+
+# Coverage / reports
+*.profraw
+*.profdata
+
+# Node / docs tooling (future)
+node_modules/
+dist/
+
+# Docs
+docs/

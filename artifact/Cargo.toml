@@ -1,0 +1,13 @@
+[package]
+name = "redproof-artifact"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+base64 = { workspace = true }
+chrono = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+redproof-statements = { path = "../statements" }

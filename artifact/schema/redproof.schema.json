@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://redproof.dev/schemas/redproof-artifact.json",
+  "title": "RedProofArtifact",
+  "type": "object",
+  "required": [
+    "version",
+    "domain",
+    "time_utc",
+    "tls",
+    "statement",
+    "commitments",
+    "proof",
+    "meta"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "domain": { "type": "string", "minLength": 1 },
+    "time_utc": { "type": "string", "format": "date-time" },
+    "tls": { "$ref": "#/definitions/TlsProofContext" },
+    "statement": { "$ref": "#/definitions/Statement" },
+    "commitments": { "$ref": "#/definitions/CommitmentSet" },
+    "proof": { "$ref": "#/definitions/EncodedBlob" },
+    "meta": { "$ref": "#/definitions/ArtifactMeta" }
+  },
+  "definitions": {
+    "TlsProofContext": {
+      "type": "object",
+      "required": ["version", "cipher", "cert_fingerprints"],
+      "properties": {
+        "version": { "type": "string" },
+        "cipher": { "type": "string" },
+        "cert_fingerprints": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "alpn": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "CommitmentSet": {
+      "type": "object",
+      "required": ["handshake", "app_data"],
+      "properties": {
+        "handshake": { "$ref": "#/definitions/EncodedBlob" },
+        "app_data": { "$ref": "#/definitions/EncodedBlob" },
+        "witness": { "$ref": "#/definitions/EncodedBlob" }
+      },
+      "additionalProperties": false
+    },
+    "EncodedBlob": {
+      "type": "string",
+      "contentEncoding": "base64"
+    },
+    "ArtifactMeta": {
+      "type": "object",
+      "required": ["tool_version"],
+      "properties": {
+        "tool_version": { "type": "string" },
+        "annotations": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "Statement": {
+      "oneOf": [
+        { "$ref": "#/definitions/HeaderPresent" },
+        { "$ref": "#/definitions/HeaderAbsent" },
+        { "$ref": "#/definitions/HeaderEquals" },
+        { "$ref": "#/definitions/HashEquals" },
+        { "$ref": "#/definitions/Regex" }
+      ]
+    },
+    "HeaderPresent": {
+      "type": "object",
+      "required": ["type", "target"],
+      "properties": {
+        "type": { "const": "header:present" },
+        "target": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "HeaderAbsent": {
+      "type": "object",
+      "required": ["type", "target"],
+      "properties": {
+        "type": { "const": "header:absent" },
+        "target": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "HeaderEquals": {
+      "type": "object",
+      "required": ["type", "target", "expected"],
+      "properties": {
+        "type": { "const": "header:eq" },
+        "target": { "type": "string" },
+        "expected": { "type": "string" },
+        "case_sensitive": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "HashEquals": {
+      "type": "object",
+      "required": ["type", "algorithm", "digest"],
+      "properties": {
+        "type": { "const": "hash:eq" },
+        "algorithm": { "enum": ["sha256", "blake3"] },
+        "digest": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "Regex": {
+      "type": "object",
+      "required": ["type", "pattern"],
+      "properties": {
+        "type": { "const": "regex" },
+        "pattern": { "type": "string" },
+        "scope": { "enum": ["headers", "body", "any"], "default": "any" },
+        "case_sensitive": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false
+    }
+  }
+}

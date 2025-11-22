@@ -16,8 +16,3 @@ RedProof delivers verifiable, privacy-preserving HTTPS evidence artifacts so red
 - `docs/` - Design notes, roadmap, critique, and operational guidance.
 - `examples/` - Reference fixtures, mock targets, and sample `.red` artifacts once generated.
 
-## Documentation
-A living roadmap with phased delivery goals, risks, and acceptance criteria lives in `docs/ROADMAP.md`. Industry critiques and improvement suggestions accompany each phase.
-
-## Current Status
-Scaffolding only. See the roadmap for build priorities, cryptographic dependencies, and evaluation milestones before implementing the Rust crates.

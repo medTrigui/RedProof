@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "domain": "target.example",
+  "time_utc": "2025-11-22T19:15:00Z",
+  "tls": {
+    "version": "TLS1.3",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cert_fingerprints": ["sha256:abcd1234"],
+    "alpn": "h2"
+  },
+  "statement": {
+    "type": "header:absent",
+    "target": "Strict-Transport-Security"
+  },
+  "commitments": {
+    "handshake": "aGFuZHNoYWtlLWNvbW1pdA==",
+    "app_data": "cmVzcG9uc2UtY29tbWl0",
+    "witness": null
+  },
+  "proof": "cHJvb2YtYmxvYg==",
+  "meta": {
+    "tool_version": "0.0.1",
+    "annotations": {}
+  }
+}

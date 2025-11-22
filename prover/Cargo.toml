@@ -1,0 +1,16 @@
+[package]
+name = "redproof-prover"
+version = "0.0.1"
+edition = "2021"
+
+[[bin]]
+name = "redproof-prover"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+redproof-artifact = { path = "../artifact" }
+redproof-statements = { path = "../statements" }
+serde = { workspace = true }
+serde_json = { workspace = true }
