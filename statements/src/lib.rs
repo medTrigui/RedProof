@@ -38,18 +38,13 @@ pub enum HashAlgorithm {
     Blake3,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum RegexScope {
     Headers,
     Body,
+    #[default]
     Any,
-}
-
-impl Default for RegexScope {
-    fn default() -> Self {
-        Self::Any
-    }
 }
 
 impl Statement {
