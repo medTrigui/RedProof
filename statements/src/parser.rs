@@ -67,7 +67,7 @@ fn parse_hash(parts: Vec<String>) -> Result<Statement, StatementParseError> {
             "hash:eq:<algorithm>:<digest>",
         ));
     }
-    if parts[0].to_ascii_lowercase() != "eq" {
+    if !parts[0].eq_ignore_ascii_case("eq") {
         return Err(StatementParseError::UnsupportedHashOperation(
             parts[0].clone(),
         ));
