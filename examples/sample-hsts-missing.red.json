@@ -13,6 +13,7 @@
     "target": "Strict-Transport-Security"
   },
   "commitments": {
+    "algorithm": "blake3",
     "handshake": "aGFuZHNoYWtlLWNvbW1pdA==",
     "app_data": "cmVzcG9uc2UtY29tbWl0",
     "witness": null

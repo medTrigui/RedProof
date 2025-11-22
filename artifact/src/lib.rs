@@ -52,10 +52,11 @@ impl TlsProofContext {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct CommitmentSet {
+    pub algorithm: CommitmentAlgorithm,
     pub handshake: EncodedBlob,
     pub app_data: EncodedBlob,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub witness: Option<EncodedBlob>,
+    pub witness: Option<CommitmentWitness>,
 }
 
 impl CommitmentSet {
@@ -63,10 +64,24 @@ impl CommitmentSet {
         self.handshake.ensure_base64("handshake commitment")?;
         self.app_data.ensure_base64("application-data commitment")?;
         if let Some(witness) = &self.witness {
-            witness.ensure_base64("witness commitment")?;
+            witness.handshake.ensure_base64("handshake witness")?;
+            witness.app_data.ensure_base64("app-data witness")?;
         }
         Ok(())
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum CommitmentAlgorithm {
+    Blake3,
+    Sha256,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+pub struct CommitmentWitness {
+    pub handshake: EncodedBlob,
+    pub app_data: EncodedBlob,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
@@ -94,6 +109,16 @@ impl EncodedBlob {
             .decode(self.0.as_bytes())
             .map(|_| ())
             .map_err(|_| ArtifactValidationError::InvalidBase64(field.to_string()))
+    }
+
+    pub fn decode(&self) -> Result<Vec<u8>, ArtifactValidationError> {
+        STANDARD
+            .decode(self.0.as_bytes())
+            .map_err(|_| ArtifactValidationError::InvalidBase64("encoded blob".into()))
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        EncodedBlob(STANDARD.encode(bytes))
     }
 }
 
@@ -131,6 +156,7 @@ mod tests {
             },
             statement,
             commitments: CommitmentSet {
+                algorithm: CommitmentAlgorithm::Blake3,
                 handshake: encoded("handshake"),
                 app_data: encoded("app"),
                 witness: None,
