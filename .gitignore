@@ -16,5 +16,3 @@ Cargo.lock
 node_modules/
 dist/
 
-# Docs
-docs/
