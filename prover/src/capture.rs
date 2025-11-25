@@ -319,3 +319,84 @@ fn extract_tls_metadata(conn: &ClientConnection, domain: &str) -> TlsMetadata {
         alpn,
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use http::Method;
+    use serde_json::Value;
+
+    #[test]
+    fn parse_http_response_normalizes_headers_and_body() {
+        let raw =
+            b"HTTP/1.1 200 OK\r\nServer: Example\r\nX-Test: One\r\nX-Test: Two\r\n\r\nHello body"
+                .to_vec();
+        let (response, headers, map) = parse_http_response(&raw, 1024).expect("parse http");
+
+        assert_eq!(response.status_code, 200);
+        assert_eq!(response.reason, "OK");
+        assert_eq!(headers[0].name, "server");
+        assert_eq!(headers[0].value, "Example");
+        let x_test = map.get("x-test").expect("x-test header");
+        assert_eq!(
+            x_test,
+            &vec![String::from("One"), String::from("Two")]
+        );
+        assert_eq!(response.body, b"Hello body");
+        assert!(!response.body_truncated);
+    }
+
+    #[test]
+    fn parse_http_response_truncates_body_when_needed() {
+        let raw = b"HTTP/1.1 200 OK\r\nServer: Example\r\n\r\nHello body".to_vec();
+        let (response, _, _) = parse_http_response(&raw, 4).expect("parse http");
+        assert_eq!(response.body, b"Hell");
+        assert!(response.body_truncated);
+    }
+
+    #[test]
+    fn canonicalize_handshake_outputs_expected_json() {
+        let tls = TlsMetadata {
+            version: "TLS1.3".into(),
+            cipher: "TLS_AES_128_GCM_SHA256".into(),
+            cert_fingerprints: vec!["sha256:deadbeef".into()],
+            alpn: Some("h2".into()),
+        };
+        let bytes = canonicalize_handshake(&tls, "example.com").expect("handshake");
+        let json: Value = serde_json::from_slice(&bytes).expect("json");
+        assert_eq!(json["domain"], "example.com");
+        assert_eq!(json["version"], "TLS1.3");
+        assert_eq!(json["cipher"], "TLS_AES_128_GCM_SHA256");
+        assert_eq!(json["alpn"], "h2");
+    }
+
+    #[test]
+    fn capture_record_transcript_clones_buffers() {
+        let record = CaptureRecord {
+            requested_url: Url::parse("https://example.com").unwrap(),
+            domain: "example.com".into(),
+            method: Method::GET,
+            captured_at: Utc::now(),
+            tls: TlsMetadata {
+                version: String::new(),
+                cipher: String::new(),
+                cert_fingerprints: vec![],
+                alpn: None,
+            },
+            response: HttpResponse {
+                http_version: "HTTP/1.1".into(),
+                status_code: 200,
+                reason: "OK".into(),
+                headers: vec![],
+                body: vec![],
+                body_truncated: false,
+            },
+            canonical_handshake: b"handshake".to_vec(),
+            canonical_app_data: b"app".to_vec(),
+            headers: HeaderMap::new(),
+        };
+
+        let transcript = record.transcript();
+        assert_eq!(transcript.handshake, b"handshake");
+        assert_eq!(transcript.app_data, b"app");
+    }
+}

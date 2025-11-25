@@ -140,3 +140,101 @@ fn headers_as_text(headers: &[HeaderEntry]) -> String {
 fn body_as_text(body: &[u8]) -> String {
     String::from_utf8_lossy(body).to_string()
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::capture::{CaptureRecord, HeaderEntry, HttpResponse, TlsMetadata};
+    use chrono::Utc;
+    use http::Method;
+    use url::Url;
+
+    fn base_record() -> CaptureRecord {
+        CaptureRecord {
+            requested_url: Url::parse("https://example.com").unwrap(),
+            domain: "example.com".into(),
+            method: Method::GET,
+            captured_at: Utc::now(),
+            tls: TlsMetadata {
+                version: String::new(),
+                cipher: String::new(),
+                cert_fingerprints: vec![],
+                alpn: None,
+            },
+            response: HttpResponse {
+                http_version: "HTTP/1.1".into(),
+                status_code: 200,
+                reason: "OK".into(),
+                headers: vec![],
+                body: b"body".to_vec(),
+                body_truncated: false,
+            },
+            canonical_handshake: vec![],
+            canonical_app_data: vec![],
+            headers: HeaderMap::new(),
+        }
+    }
+
+    #[test]
+    fn header_present_and_absent_evaluate_correctly() {
+        let mut record = base_record();
+        record
+            .headers
+            .entry("server".into())
+            .or_default()
+            .push("Example".into());
+
+        let present = Statement::HeaderPresent {
+            target: "Server".into(),
+        };
+        assert!(evaluate(&present, &record).satisfied);
+
+        let absent = Statement::HeaderAbsent {
+            target: "Strict-Transport-Security".into(),
+        };
+        assert!(evaluate(&absent, &record).satisfied);
+    }
+
+    #[test]
+    fn header_equals_respects_case_insensitive_compare() {
+        let mut record = base_record();
+        record
+            .headers
+            .entry("server".into())
+            .or_default()
+            .push("Apache".into());
+        let stmt = Statement::HeaderEquals {
+            target: "Server".into(),
+            expected: "apache".into(),
+            case_sensitive: None,
+        };
+        assert!(evaluate(&stmt, &record).satisfied);
+    }
+
+    #[test]
+    fn hash_equals_fails_when_truncated() {
+        let mut record = base_record();
+        record.response.body_truncated = true;
+        let stmt = Statement::HashEquals {
+            algorithm: HashAlgorithm::Sha256,
+            digest: "deadbeef".into(),
+        };
+        let eval = evaluate(&stmt, &record);
+        assert!(!eval.satisfied);
+        assert!(eval.details.unwrap().contains("truncated"));
+    }
+
+    #[test]
+    fn regex_scope_headers_matches() {
+        let mut record = base_record();
+        record.response.headers = vec![HeaderEntry {
+            name: "set-cookie".into(),
+            value: "session=abc; HttpOnly".into(),
+        }];
+        let stmt = Statement::Regex {
+            pattern: "session=.*".into(),
+            scope: RegexScope::Headers,
+            case_sensitive: false,
+        };
+        assert!(evaluate(&stmt, &record).satisfied);
+    }
+}
