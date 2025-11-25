@@ -1,21 +1,30 @@
 # Phase 2 Artifacts
 
-This folder will accumulate deterministic `.red` fixtures generated via:
+`example.red` is a captured artifact for `https://example.com` proving that `Strict-Transport-Security` is absent. Regenerate it at any time with:
 
 ```
 cargo run -p redproof-prover -- \
   --url https://example.com \
   --prove header:absent:Strict-Transport-Security \
-  --method GET \
-  --hash_alg blake3 \
+  --method get \
+  --hash-alg blake3 \
   --format json \
   --out examples/phase-2/example.red
 ```
 
-After generating an artifact, run the verifier:
+Verification (expected `VALID`):
 
 ```
 cargo run -p redproof-verifier -- examples/phase-2/example.red
+# VALID
+# Domain: example.com
+# Statement: header absent: Strict-Transport-Security
+# Commitments: Blake3 (witness=true)
 ```
 
-For tamper tests, edit the JSON file manually (e.g., change the `commitments.handshake` field) and ensure `redproof-verifier` reports `handshake digest mismatch`.
+`example-tampered.red` is the same artifact with `commitments.handshake` modified. The verifier should flag it:
+
+```
+cargo run -p redproof-verifier -- examples/phase-2/example-tampered.red
+# Error: handshake digest mismatch
+```

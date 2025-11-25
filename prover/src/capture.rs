@@ -1,6 +1,6 @@
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::sync::Arc;
+use std::sync::{Arc, Once};
 use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -77,6 +77,7 @@ impl CaptureRecord {
 }
 
 pub fn capture(options: &CaptureOptions) -> Result<CaptureRecord> {
+    install_crypto_provider();
     if options.url.scheme() != "https" {
         bail!("only https:// URLs are supported (got {})", options.url);
     }
@@ -337,10 +338,7 @@ mod tests {
         assert_eq!(headers[0].name, "server");
         assert_eq!(headers[0].value, "Example");
         let x_test = map.get("x-test").expect("x-test header");
-        assert_eq!(
-            x_test,
-            &vec![String::from("One"), String::from("Two")]
-        );
+        assert_eq!(x_test, &vec![String::from("One"), String::from("Two")]);
         assert_eq!(response.body, b"Hello body");
         assert!(!response.body_truncated);
     }
@@ -399,4 +397,13 @@ mod tests {
         assert_eq!(transcript.handshake, b"handshake");
         assert_eq!(transcript.app_data, b"app");
     }
+}
+
+fn install_crypto_provider() {
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        rustls::crypto::ring::default_provider()
+            .install_default()
+            .expect("install ring crypto provider");
+    });
 }

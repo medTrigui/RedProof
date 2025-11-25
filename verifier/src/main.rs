@@ -31,15 +31,21 @@ fn main() -> Result<()> {
     let data = fs::read(&cli.artifact)
         .with_context(|| format!("failed to read {}", cli.artifact.display()))?;
     let artifact = load_artifact(&data, cli.format)?;
-    verify_artifact(&artifact)?;
-    println!("VALID");
-    println!("Domain: {}", artifact.domain);
-    println!("Statement: {}", artifact.statement.summary());
-    println!(
-        "Commitments: {:?} (witness={})",
-        artifact.commitments.algorithm,
-        artifact.commitments.witness.is_some()
-    );
+    match verify_artifact(&artifact) {
+        Ok(()) => {
+            println!("VALID");
+            println!("Domain: {}", artifact.domain);
+            println!("Statement: {}", artifact.statement.summary());
+            println!(
+                "Commitments: {:?} (witness={})",
+                artifact.commitments.algorithm,
+                artifact.commitments.witness.is_some()
+            );
+        }
+        Err(err) => {
+            println!("INVALID: {err}");
+        }
+    }
     Ok(())
 }
 
